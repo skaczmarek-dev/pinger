@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  # Main pinger application
+  pinger:
+    build: .
+    container_name: pinger-server
+    environment:
+      # How often to check servers (in seconds)
+      - CHECK_INTERVAL=${CHECK_INTERVAL:-30}
+      # Path to hosts file inside container
+      - HOSTS_FILE=/app/config/hosts.txt
+    volumes:
+      # Mount config directory as read-only
+      - ./config:/app/config:ro
+    networks:
+      - pinger-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  # Nginx reverse proxy
+  nginx:
+    image: nginx:alpine
+    container_name: pinger-nginx
+    ports:
+      # Expose on host port (default 8080)
+      - "${NGINX_PORT:-8080}:80"
+    volumes:
+      # Mount nginx configuration as read-only
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - pinger
+    networks:
+      - pinger-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+# Custom bridge network for container communication
+networks:
+  pinger-network:
+    driver: bridge
+
+# Named volume for configuration (optional, currently using bind mount)
+volumes:
+  config:

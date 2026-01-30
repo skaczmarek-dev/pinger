@@ -1,0 +1,7 @@
+# List of hosts to monitor
+# One host per line, lines starting with # are ignored
+
+google.com
+8.8.8.8
+localhost
+github.com
