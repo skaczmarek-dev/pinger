@@ -56,17 +56,45 @@ HTML_TEMPLATE = """
 <head>
     <title>Server Pinger</title>
     <meta http-equiv="refresh" content="10">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { font-family: Arial; margin: 40px; background: #f5f5f5; }
-        h1 { color: #333; }
-        table { border-collapse: collapse; width: 100%; background: white; }
+        :root {
+            --bg: #f5f5f5;
+            --card: #ffffff;
+            --text: #333333;
+            --th-bg: #4CAF50;
+            --th-color: #ffffff;
+            --toggle-border: rgba(0,0,0,0.08);
+            --toggle-bg: rgba(255,255,255,0.6);
+            --toggle-color: var(--text);
+        }
+        .dark-theme {
+            --bg: #0f1720;
+            --card: #0b1220;
+            --text: #e5e7eb;
+            --th-bg: #0ea5a3;
+            --th-color: #062023;
+            --toggle-border: rgba(255,255,255,0.12);
+            --toggle-bg: rgba(255,255,255,0.04);
+            --toggle-color: var(--text);
+        }
+        html, body { height: 100%; }
+        body { font-family: Arial; margin: 40px; background: var(--bg); color: var(--text); }
+        h1 { color: var(--text); }
+        table { border-collapse: collapse; width: 100%; background: var(--card); }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
-        th { background-color: #1F10E3; color: white; }
-        .up { color: green; font-weight: bold; }
-        .down { color: red; font-weight: bold; }
+        th { background-color: var(--th-bg); color: var(--th-color); }
+        .up { color: #22c55e; font-weight: bold; }
+        .down { color: #ef4444; font-weight: bold; }
+        /* Theme toggle button */
+        #theme-toggle { background: var(--toggle-bg); border: 1px solid var(--toggle-border); color: var(--toggle-color); padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size:16px; line-height:1; }
+        #theme-toggle:hover { opacity: 0.95; }
     </style>
 </head>
 <body>
+    <div style="position:fixed; top:12px; right:12px; z-index:999">
+        <button id="theme-toggle" aria-label="Toggle theme"><i id="theme-icon" class="fa-solid fa-moon"></i></button>
+    </div>
     <h1>📡 Server Status Monitor</h1>
     <p>Auto-refresh every 10s | Check interval: {{ interval }}s</p>
     <table>
@@ -86,6 +114,35 @@ HTML_TEMPLATE = """
 </body>
 </html>
 """
+
+# Add small JS to handle theme toggle and remember choice in localStorage
+HTML_TEMPLATE = HTML_TEMPLATE.replace("</body>\n</html>\n", """<script>
+    (function(){
+        const toggle = document.getElementById('theme-toggle');
+        if(!toggle) return;
+        const icon = document.getElementById('theme-icon');
+        const apply = (theme)=>{
+            if(theme==='dark') document.documentElement.classList.add('dark-theme');
+            else document.documentElement.classList.remove('dark-theme');
+            if(icon){
+                icon.className = theme==='dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+            }
+        };
+        let stored = localStorage.getItem('theme');
+        if(!stored){
+            stored = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+        }
+        apply(stored);
+        toggle.addEventListener('click', function(){
+            const newt = document.documentElement.classList.contains('dark-theme') ? 'light' : 'dark';
+            localStorage.setItem('theme', newt);
+            apply(newt);
+        });
+    })();
+    </script>
+</body>
+</html>
+""")
 
 @app.route('/')
 def index():
